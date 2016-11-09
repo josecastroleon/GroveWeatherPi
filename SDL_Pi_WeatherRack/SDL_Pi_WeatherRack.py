@@ -13,17 +13,6 @@
 
 # imports
 
-try:
-	# Check for user imports
-	try:
-        	import conflocal as config
-	except ImportError:
-        	import config
-
-
-except:
-	import NoWPAConfig.py as config	
-
 import sys
 import time as time_
 
@@ -200,28 +189,16 @@ class SDL_Pi_WeatherRack:
 
 			# now figure out if it is an ADS1015 or ADS1115
 			if ((0x0F & value) == 0):
-				config.ADS1015_Present = True
-				config.ADS1115_Present = False
 				# check again (1 out 16 chance of zero)
 				value = self.ads1015.readRaw(0, self.gain, self.sps) # AIN1 wired to wind vane on WeatherPiArduino
-				if ((0x0F & value) == 0):
-					config.ADS1015_Present = True
-					config.ADS1115_Present = False
-
-				else:
-					config.ADS1015_Present = False
-					config.ADS1115_Present = True
+				if ((0x0F & value) != 0):
 					self.ads1015 = ADS1x15(ic=ADS1115, address=0x48)
 			else:
-				config.ADS1015_Present = False
-				config.ADS1115_Present = True
 				self.ads1015 = ADS1x15(ic=ADS1115, address=0x48)
 
 
 		except TypeError as e:
   	 		print "Type Error"
-    			config.ADS1015_Present = False
-    			config.ADS1115_Present = False
 
 
 		SDL_Pi_WeatherRack._ADMode = ADMode
