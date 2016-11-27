@@ -1,7 +1,6 @@
 import logging
 import logging.config
 import math
-import MySQLdb as mdb
 import os
 import random 
 import re
@@ -16,6 +15,8 @@ import yaml
 
 from daemon import runner
 from datetime import datetime
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
 
 sys.path.append('./SDL_Pi_SSD1306')
 sys.path.append('./Adafruit_Python_SSD1306')
@@ -24,6 +25,21 @@ sys.path.append('./Adafruit_Python_BMP')
 sys.path.append('./Adafruit_Python_GPIO')
 sys.path.append('./SDL_Pi_WeatherRack')
 sys.path.append('./max44009')
+sys.path.append('./sqlbase')
+
+from sqlbase import Base, WeatherData
+
+# DB Configuration
+DB_Enable = False
+DB_Connection = 'mysql://root:password@localhost:3306/GroveWeatherPi'
+
+engine = create_engine(DB_Connection)
+Base.metadata.bind = engine
+DBSession = sessionmaker(bind=engine)
+
+# Create all tables in the engine. This is equivalent to "Create Table"
+# statements in raw SQL.
+#Base.metadata.create_all(engine)
 
 import SDL_DS3231
 import Adafruit_BMP.BMP280 as BMP280
@@ -35,13 +51,6 @@ from tentacle_pi.AM2315 import AM2315
 
 logging.config.dictConfig(yaml.load(open('logging.yaml', 'r')))
 logger = logging.getLogger(__name__)
-
-# MySQL configuration
-MySQL_Enable = False
-MySQL_Url = 'localhost'
-MySQL_User = 'root'
-MySQL_Password = "password"
-MySQL_Database = 'GroveWeatherPi'
 
 # WeatherUnderground Station
 WeatherUnderground_Enable = False
@@ -187,22 +196,20 @@ class GroveWeatherPi:
             logger.debug(textresponse)
             conn.close()
 
-            if (MySQL_Enable):
-                # now we have the data, stuff it in the database
-                try:
-                    con = mdb.connect(MySQL_Url, MySQL_User, MySQL_Password, MySQL_Database);
-                    cur = con.cursor()
-                    query = 'INSERT INTO WeatherData(TimeStamp, currentWindSpeed, currentWindGust, totalRain, bmp180Temperature, bmp180Pressure, bmp180Altitude,  bmp180SeaLevel, outsideTemperature, outsideHumidity, currentWindDirection, currentWindDirectionVoltage) VALUES(UTC_TIMESTAMP(), %.3f, %.3f, %.3f, %.3f, %.3f, %.3f, %.3f, %.3f, %.3f, %.3f, %.3f)' % (currentWindSpeed, currentWindGust, totalRain,  bmp180Temperature, bmp180Pressure, bmp180Altitude,  bmp180SeaLevel,  outsideTemperature, outsideHumidity, currentWindDirection, currentWindDirectionVoltage)
-                    cur.execute(query)
-                    con.commit()
-                except mdb.Error, e:
-                    logger.exception("MySQL Error",e)
-                    con.rollback()
-                finally:    
-                    cur.close() 
-                    con.close()
-                    del cur
-                    del con
+            if (DB_Enable):
+                session = DBSession()
+                data = WeatherData(timestamp=UTC_TIMESTAMP(),
+                                   wind_direction=currentWindDirection,
+                                   wind_speed=currentWindSpeed,
+                                   wind_gust=currentWindGust,
+                                   rain=totalRain,
+                                   temperature_in=bmp180Temperature,
+                                   pressure=bmp180Pressure,
+                                   temperature_out=outsideTemperature,
+                                   humidity=outsideHumidity)
+                session.add(data)
+                session.commit()
+
 
 class GroveWeatherPiApp():
     def __init__(self):
