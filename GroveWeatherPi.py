@@ -138,6 +138,10 @@ class GroveWeatherPi:
         logger.debug('AM2315 outHumidity       =\t{0:0.1f} %'.format(outsideHumidity))
         logger.debug('AM2315 crc               =\t{0}'.format(crc_check))
 
+        logger.debug('dewpoint   =\t{0:0.1f} C'.format(self.dew_point(outsideTemperature, outsudeHumidity)))
+        logger.debug('heat index =\t{0:0.1f} C'.format(self.heat_index(outsideTemperature, outsideHumidity)))
+        logger.debug('wind chill =\t{0:0.1f} C'.format(self.wind_chill(outsideTemperature, wincurrentWindSpeed)))
+
         Scroll_SSD1306.addLineOLED(self.display,  "Wind Speed=\t%0.2f KMH" % self.currentWindSpeed)
         Scroll_SSD1306.addLineOLED(self.display,  "Rain Total=\t%0.2f mm"  % self.totalRain)
         Scroll_SSD1306.addLineOLED(self.display,  "Wind Dir=%0.2f Degrees" % self.weatherStation.current_wind_direction())
@@ -282,7 +286,7 @@ class GroveWeatherPiApp():
             # print every 10 seconds
             weatherPi.sampleAndDisplay()
 
-            # every 5 minutes, push data to mysql and check for shutdown
+            # every 5 minutes, push data to mysql
             if ((secondCount % (30)) == 0):
                 weatherPi.sampleWeather()
 
