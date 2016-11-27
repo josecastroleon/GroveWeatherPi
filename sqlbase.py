@@ -1,4 +1,3 @@
-import datetime
 import os
 import sys
 from sqlalchemy import Column, Integer, DateTime, Float
@@ -9,13 +8,13 @@ Base = declarative_base()
 class WeatherData(Base):
     __tablename__ = 'wd'
     id          = Column(Integer, primary_key=True)
-    datetime    = Column(DateTime, default=datetime.datetime.now())
+    datetime    = Column(DateTime)
     windspeed   = Column(Float)
-    winddir     = Column(Float)
+    winddir     = Column(Integer)
     windgust    = Column(Float)
     barometer   = Column(Float)
-    inhumidity  = Column(Float)
-    outhumidity = Column(Float)
+    inhumidity  = Column(Integer)
+    outhumidity = Column(Integer)
     intemp      = Column(Float)
     outtemp     = Column(Float)
     dewpoint    = Column(Float)

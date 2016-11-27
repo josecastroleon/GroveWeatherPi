@@ -1,3 +1,4 @@
+import datetime
 import logging
 import logging.config
 import math
@@ -203,7 +204,8 @@ class GroveWeatherPi:
         logger.info("Storing Data into DB")
         if (DB_Enable):
             session = DBSession()
-            data = WeatherData(windspeed   = currentWindSpeed,
+            data = WeatherData(datetime    = datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S'),
+                               windspeed   = currentWindSpeed,
                                winddir     = self.currentWindDirection,
                                windgust    = currentWindGust,
                                barometer   = bmp180Pressure,
