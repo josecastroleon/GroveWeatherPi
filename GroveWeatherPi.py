@@ -30,8 +30,8 @@ sys.path.append('./sqlbase')
 from sqlbase import Base, WeatherData
 
 # DB Configuration
-DB_Enable = False
-DB_Connection = 'mysql://root:password@localhost:3306/GroveWeatherPi'
+DB_Enable = True
+DB_Connection = 'postgresql://weather:weather@localhost:5432/weather'
 
 engine = create_engine(DB_Connection)
 Base.metadata.bind = engine
@@ -109,7 +109,7 @@ class GroveWeatherPi:
     def totalRainArray(self):
         total = 0
         for i in range(20):
-            total = total+rainArray[i]
+            total = total+self.rainArray[i]
         return total
 
     def sampleAndDisplay(self):
@@ -138,9 +138,9 @@ class GroveWeatherPi:
         logger.debug('AM2315 outHumidity       =\t{0:0.1f} %'.format(outsideHumidity))
         logger.debug('AM2315 crc               =\t{0}'.format(crc_check))
 
-        logger.debug('dewpoint   =\t{0:0.1f} C'.format(self.dew_point(outsideTemperature, outsudeHumidity)))
+        logger.debug('dewpoint   =\t{0:0.1f} C'.format(self.dew_point(outsideTemperature, outsideHumidity)))
         logger.debug('heat index =\t{0:0.1f} C'.format(self.heat_index(outsideTemperature, outsideHumidity)))
-        logger.debug('wind chill =\t{0:0.1f} C'.format(self.wind_chill(outsideTemperature, wincurrentWindSpeed)))
+        logger.debug('wind chill =\t{0:0.1f} C'.format(self.wind_chill(outsideTemperature, self.currentWindSpeed)))
 
         Scroll_SSD1306.addLineOLED(self.display,  "Wind Speed=\t%0.2f KMH" % self.currentWindSpeed)
         Scroll_SSD1306.addLineOLED(self.display,  "Rain Total=\t%0.2f mm"  % self.totalRain)
@@ -157,7 +157,7 @@ class GroveWeatherPi:
         self.currentWindDirectionVoltage = self.weatherStation.current_wind_direction_voltage()
 
         # get BMP180 temperature and pressure
-        bmp180Temperature = self.mp280.read_temperature()
+        bmp180Temperature = self.bmp280.read_temperature()
         bmp180Pressure = self.bmp280.read_pressure()/1000
         bmp180Altitude = self.bmp280.read_altitude()
         bmp180SeaLevel = self.bmp280.read_sealevel_pressure()/1000
@@ -171,7 +171,7 @@ class GroveWeatherPi:
         self.addRainToArray(self.totalRain - self.lastRainReading)	
         self.rain60Minutes = self.totalRainArray()
         self.lastRainReading = self.totalRain
-        logger.info("rain in past 60 minute= %s" % rain60Minutes)
+        logger.info("rain in past 60 minute= %s" % self.rain60Minutes)
 
         logger.info("Sending Data to WeatherUnderground")
         if (WeatherUnderground_Enable):
@@ -186,7 +186,7 @@ class GroveWeatherPi:
             myURL += "&windspeedmph=%0.2f" % (currentWindSpeed/1.6) 
             myURL += "&humidity=%i" % outsideHumidity
             myURL += "&tempf=%0.2f" % ((outsideTemperature*9.0/5.0)+32.0)
-            myURL += "&rainin=%0.2f" % ((rain60Minutes)/25.4)
+            myURL += "&rainin=%0.2f" % ((self.rain60Minutes)/25.4)
             myURL += "&baromin=%0.2f" % ((bmp180SeaLevel) * 0.2953)
             myURL += "&solarradiation=%0.2f" % solarradiation
             myURL += "&software=GroveWeatherPi"
@@ -203,9 +203,8 @@ class GroveWeatherPi:
         logger.info("Storing Data into DB")
         if (DB_Enable):
             session = DBSession()
-            data = WeatherData(timestamp   = UTC_TIMESTAMP(),
-                               windspeed   = currentWindSpeed,
-                               winddir     = currentWindDirection,
+            data = WeatherData(windspeed   = currentWindSpeed,
+                               winddir     = self.currentWindDirection,
                                windgust    = currentWindGust,
                                barometer   = bmp180Pressure,
                                inhumidity  = outsideHumidity,
@@ -213,15 +212,15 @@ class GroveWeatherPi:
                                intemp      = bmp180Temperature,
                                outtemp     = outsideTemperature,
                                rain        = self.lastRainReading,
-                               dewpoint    = self.dew_point(outsideTemperature, outsudeHumidity)
-                               heatindex   = self.heat_index(outsideTemperature, outsideHumidity)
-                               windchill   = self.wind_chill(outsideTemperature, wincurrentWindSpeed))
-                session.add(data)
-                session.commit()
+                               dewpoint    = self.dew_point(outsideTemperature, outsideHumidity),
+                               heatindex   = self.heat_index(outsideTemperature, outsideHumidity),
+                               windchill   = self.wind_chill(outsideTemperature, self.currentWindSpeed))
+            session.add(data)
+            session.commit()
 
     def heat_index(self, temperature, humidity):
-        c2f=lambda t: t * 9 / 5. + 32,
-        f2c=lambda t: (t - 32) * 5 / 9.,
+        c2f=lambda t: t * 9 / 5. + 32
+        f2c=lambda t: (t - 32) * 5 / 9.
 
         c1 = -42.379
         c2 = 2.04901523
