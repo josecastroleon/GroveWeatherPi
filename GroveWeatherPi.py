@@ -196,19 +196,74 @@ class GroveWeatherPi:
             logger.debug(textresponse)
             conn.close()
 
-            if (DB_Enable):
-                session = DBSession()
-                data = WeatherData(timestamp=UTC_TIMESTAMP(),
-                                   wind_direction=currentWindDirection,
-                                   wind_speed=currentWindSpeed,
-                                   wind_gust=currentWindGust,
-                                   rain=totalRain,
-                                   temperature_in=bmp180Temperature,
-                                   pressure=bmp180Pressure,
-                                   temperature_out=outsideTemperature,
-                                   humidity=outsideHumidity)
+        logger.info("Storing Data into DB")
+        if (DB_Enable):
+            session = DBSession()
+            data = WeatherData(timestamp   = UTC_TIMESTAMP(),
+                               windspeed   = currentWindSpeed,
+                               winddir     = currentWindDirection,
+                               windgust    = currentWindGust,
+                               barometer   = bmp180Pressure,
+                               inhumidity  = outsideHumidity,
+                               outhumidity = outsideHumidity,
+                               intemp      = bmp180Temperature,
+                               outtemp     = outsideTemperature,
+                               rain        = self.lastRainReading,
+                               dewpoint    = self.dew_point(outsideTemperature, outsudeHumidity)
+                               heatindex   = self.heat_index(outsideTemperature, outsideHumidity)
+                               windchill   = self.wind_chill(outsideTemperature, wincurrentWindSpeed))
                 session.add(data)
                 session.commit()
+
+    def heat_index(self, temperature, humidity):
+        c2f=lambda t: t * 9 / 5. + 32,
+        f2c=lambda t: (t - 32) * 5 / 9.,
+
+        c1 = -42.379
+        c2 = 2.04901523
+        c3 = 10.14333127
+        c4 = -0.22475541
+        c5 = -6.83783e-3
+        c6 = -5.481717e-2
+        c7 = 1.22874e-3
+        c8 = 8.5282e-4
+        c9 = -1.99e-6
+
+        T = c2f(temperature)
+
+        # try simplified formula first (used for HI < 80)
+        HI = 0.5 * (T + 61. + (T - 68.) * 1.2 + humidity * 0.094)
+
+        if HI >= 80:
+            # use Rothfusz regression
+            HI = math.fsum([
+                c1,
+                c2 * T,
+                c3 * RH,
+                c4 * T * humidity,
+                c5 * T**2,
+                c6 * humidity**2,
+                c7 * T**2 * humidity,
+                c8 * T * humidity**2,
+                c9 * T**2 * humidity**2,
+            ])
+
+        return f2c(HI)
+
+    def dew_point(self, temperature, humidity):
+        CONSTANTS = dict(
+            positive=dict(b=17.368, c=238.88),
+            negative=dict(b=17.966, c=247.15),
+        )
+
+        const = CONSTANTS['positive'] if temperature > 0 else CONSTANTS['negative']
+
+        pa = humidity / 100. * math.exp(const['b'] * temperature / (const['c'] + temperature))
+        return const['c'] * math.log(pa) / (const['b'] - math.log(pa))
+
+    def wind_chill(self, temp, wind_speed):
+        return 35.74 + (0.6215 * temp) - 35.75 * (wind_speed ** 0.16) \
+            + 0.4275 * temp * (wind_speed ** 0.16)
 
 
 class GroveWeatherPiApp():
