@@ -143,10 +143,12 @@ class GroveWeatherPi:
         logger.debug('heat index =\t{0:0.1f} C'.format(self.heat_index(outsideTemperature, outsideHumidity)))
         logger.debug('wind chill =\t{0:0.1f} C'.format(self.wind_chill(outsideTemperature, self.currentWindSpeed)))
 
-        Scroll_SSD1306.addLineOLED(self.display,  "Wind Speed=\t%0.2f KMH" % self.currentWindSpeed)
-        Scroll_SSD1306.addLineOLED(self.display,  "Rain Total=\t%0.2f mm"  % self.totalRain)
-        Scroll_SSD1306.addLineOLED(self.display,  "Wind Dir=%0.2f Degrees" % self.weatherStation.current_wind_direction())
-        Scroll_SSD1306.addLineOLED(self.display,  "%s"                     % self.ds3231.read_datetime())
+        Scroll_SSD1306.addLineOLED(self.display,  '{0}'.format(self.ds3231.read_datetime()))
+        Scroll_SSD1306.addLineOLED(self.display,  'IT= {0:0.1f}    OT= {1:0.1f} '.format(self.bmp280.read_temperature(),outsideTemperature))
+        Scroll_SSD1306.addLineOLED(self.display,  'PS= {0:0.1f}    HU= {1:0.0f} '.format((self.bmp280.read_pressure()/1000),outsideHumidity))
+        Scroll_SSD1306.addLineOLED(self.display,  'Wind Speed= {0:0.1f} KMH  '.format(self.currentWindSpeed))
+        Scroll_SSD1306.addLineOLED(self.display,  'Rain Total= {0:0.1f} mm   '.format(self.totalRain))
+        Scroll_SSD1306.addLineOLED(self.display,  'Wind Dir= {0:0.1f} Degrees'.format(self.weatherStation.current_wind_direction()))
 
     def sampleWeather(self):
         logger.info(" Weather Sampling") 
