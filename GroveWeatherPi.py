@@ -292,8 +292,8 @@ class GroveWeatherPiApp():
             # print every 10 seconds
             weatherPi.sampleAndDisplay()
 
-            # every 5 minutes, push data to mysql
-            if ((secondCount % (30)) == 0):
+            # every 10 minutes, push data to mysql
+            if ((secondCount % (60)) == 0):
                 weatherPi.sampleWeather()
 
             secondCount = secondCount + 1
