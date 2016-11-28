@@ -167,7 +167,8 @@ class GroveWeatherPi:
         outsideTemperature, outsideHumidity, crc_check = self.am2315.sense()
 
         # get MAX44009 Luminosity
-        solarradiation = self.max44009.luminosity() * 0.0079
+        luminosity = self.max44009.luminosity()
+        solarradiation = luminosity * 0.0079
 	
         self.addRainToArray(self.totalRain - self.lastRainReading)	
         self.rain60Minutes = self.totalRainArray()
@@ -216,7 +217,9 @@ class GroveWeatherPi:
                                rain        = self.lastRainReading,
                                dewpoint    = self.dew_point(outsideTemperature, outsideHumidity),
                                heatindex   = self.heat_index(outsideTemperature, outsideHumidity),
-                               windchill   = self.wind_chill(outsideTemperature, self.currentWindSpeed))
+                               windchill   = self.wind_chill(outsideTemperature, self.currentWindSpeed),
+                               luminosity  = luminosity,
+                               radiation   = solarradiation)
             session.add(data)
             session.commit()
 

@@ -21,3 +21,5 @@ class WeatherData(Base):
     heatindex   = Column(Float)
     windchill   = Column(Float)
     rain        = Column(Float)
+    luminosity  = Column(Float)
+    radiation   = Column(Float)
