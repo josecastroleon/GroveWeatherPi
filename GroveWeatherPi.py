@@ -148,7 +148,7 @@ class GroveWeatherPi:
         Scroll_SSD1306.addLineOLED(self.display,  'PS= {0:0.1f}    HU= {1:0.0f} '.format((self.bmp280.read_pressure()/1000),outsideHumidity))
         Scroll_SSD1306.addLineOLED(self.display,  'Wind Speed= {0:0.1f} KMH  '.format(self.currentWindSpeed))
         Scroll_SSD1306.addLineOLED(self.display,  'Rain Total= {0:0.1f} mm   '.format(self.totalRain))
-        Scroll_SSD1306.addLineOLED(self.display,  'Wind Dir= {0:0.1f} Degrees'.format(self.weatherStation.current_wind_direction()))
+        Scroll_SSD1306.addLineOLED(self.display,  'Wind Dir  = {0:0.1f} Deg  '.format(self.weatherStation.current_wind_direction()))
 
     def sampleWeather(self):
         logger.info(" Weather Sampling") 
